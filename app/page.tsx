@@ -2,27 +2,16 @@
 
 import { useState } from "react";
 
-interface TicketResponse {
-  category: string;
-  priority: string;
-  assigned_team: string;
-  confidence: string;
-  human_review_required: boolean;
-  reasoning: string;
-}
-
-interface ClassificationResponse {
-  estimated_manual_time: number;
-  ai_routing_time: number;
-  time_saved_percentage: number;
-  issues: TicketResponse[];
-}
+import {
+  TicketResponse,
+  ClassificationResponse,
+} from "@/app/ticket";
 
 export default function Home() {
   const [ticket, setTicket] = useState("");
   const [result, setResult] = useState<ClassificationResponse | null>(null);
   const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [isloading, setisLoading] = useState(false);
 
   const classifyTicket = async () => {
     if (!ticket.trim()) {
@@ -30,12 +19,12 @@ export default function Home() {
       return;
     }
 
-    setLoading(true);
+    setisLoading(true);
     setError("");
     setResult(null);
 
     try {
-      const response = await fetch("http://127.0.0.1:8000/route-ticket", {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/route-ticket`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -56,7 +45,7 @@ export default function Home() {
       console.error(err);
       setError("Unable to connect to the backend.");
     } finally {
-      setLoading(false);
+      setisLoading(false);
     }
   };
 
@@ -72,11 +61,11 @@ export default function Home() {
           AI-Powered Ticket Classification
         </p>
 
-        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="mt-8 grid grid-cols-1 lg:grid-cols-2 gap-8 items-stretch">
 
           {/* LEFT PANEL */}
 
-          <div className="flex flex-col h-[650px]">
+          <div className="flex flex-col">
 
             <label className="text-lg font-bold text-gray-100 mb-3">
               Support Ticket
@@ -92,43 +81,11 @@ export default function Home() {
 
             <button
               onClick={classifyTicket}
-              disabled={loading}
+              disabled={isloading}
               className="w-full mt-5 bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition disabled:bg-gray-400"
             >
-              {loading ? "Classifying..." : "Classify Ticket"}
+              {isloading ? "Classifying..." : "Classify Ticket"}
             </button>
-
-            <div className="mt-5 rounded-xl border border-blue-900 bg-gray-800 p-4">
-
-              <h3 className="font-semibold text-blue-400 mb-3">
-                💡 Tips
-              </h3>
-
-              <ul className="space-y-2 text-sm text-gray-300 list-disc pl-5">
-
-                <li>
-                  Describe one or more issues in a single ticket.
-                </li>
-
-                <li>
-                  Multiple issues will be classified separately.
-                </li>
-
-                <li>
-                  Short tickets like <strong>"Login"</strong> or <strong>"Payment"</strong> are supported.
-                </li>
-
-                <li>
-                  Example:
-                  <br />
-                  <span className="italic text-gray-400">
-                    "I can't login and my payment failed yesterday."
-                  </span>
-                </li>
-
-              </ul>
-
-            </div>
 
             {error && (
               <div className="mt-4 rounded-lg bg-red-100 border border-red-300 p-3">
@@ -142,178 +99,182 @@ export default function Home() {
 
           {/* RIGHT PANEL */}
 
-          <div className="h-[650px] rounded-xl border border-gray-700 bg-gray-800 p-5 flex flex-col">
+              <div className="flex flex-col">
 
-            <h2 className="text-2xl font-bold text-white mb-4">
-              Classification Results
-            </h2>
+                <label className="text-lg font-bold text-gray-100 mb-3">
+                  Classification Results
+                </label>
 
-            {result && (
-              <div className="grid grid-cols-3 gap-4 mb-6">
+                <div className="rounded-xl border border-gray-700 bg-gray-800 p-5 flex flex-col h-[500px] overflow-hidden">
 
-                <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 text-center shadow">
-                  <p className="text-sm text-gray-400">
-                    Manual Routing
-                  </p>
+                  {(!result || result.issues.length === 0) ? (
 
-                  <p className="text-2xl font-bold text-red-400 mt-2">
-                    {result.estimated_manual_time}s
-                  </p>
-                </div>
+                    <div className="h-full flex items-center justify-center text-gray-500 text-center">
+                      Submit a support ticket to view AI classification results.
+                    </div>
 
-                <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 text-center shadow">
-                  <p className="text-sm text-gray-400">
-                    AI Routing
-                  </p>
+                  ) : (
 
-                  <p className="text-2xl font-bold text-green-400 mt-2">
-                    {result.ai_routing_time}s
-                  </p>
-                </div>
+                    <div className="flex-1 overflow-y-auto min-h-0 pr-2">
 
-                <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 text-center shadow">
-                  <p className="text-sm text-gray-400">
-                    Time Saved
-                  </p>
+                      <div className="space-y-5">
 
-                  <p className="text-2xl font-bold text-blue-400 mt-2">
-                    {result.time_saved_percentage}%
-                  </p>
-                </div>
+                        {result.issues.map((issue, index) => (
 
-              </div>
-            ) }
-
-            <div className="flex-1 overflow-y-auto pr-2">
-
-              {(!result || result.issues.length === 0) && (
-                <div className="h-full flex items-center justify-center text-gray-500 text-center">
-                  Submit a support ticket to view AI classification results.
-                </div>
-              )}
-
-                <div className="space-y-5">
-
-                  {result?.issues.map((issue, index) => (
-
-                    <div
-                      key={index}
-                      className="rounded-xl bg-gray-900 border border-gray-700 shadow-lg p-5"
-                    >
-
-                      <h3 className="text-lg font-bold text-blue-600 mb-4">
-                        Issue {index + 1} of {result?.issues.length}
-                      </h3>
-
-                      {/* Reasoning First */}
-
-                      <div className="mb-5">
-                        <p className="font-semibold text-gray-300">
-                          Reasoning
-                        </p>
-
-                        <p className="mt-2 text-white">
-                          {issue.reasoning}
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-5">
-
-                        <div>
-                          <p className="text-sm font-semibold text-gray-400">
-                            Category
-                          </p>
-
-                          <p className="text-white font-medium">
-                            {issue.category}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-sm font-semibold text-gray-500">
-                            Assigned Team
-                          </p>
-
-                          <p className="text-white font-medium">
-                            {issue.assigned_team}
-                          </p>
-                        </div>
-
-                        <div>
-                          <p className="text-sm font-semibold text-gray-500 mb-1">
-                            Priority
-                          </p>
-
-                          <span
-                            className={`px-3 py-1 rounded-full text-sm font-semibold
-                              ${
-                                issue.priority === "High"
-                                  ? "bg-red-100 text-red-700"
-                                  : issue.priority === "Medium"
-                                  ? "bg-yellow-100 text-yellow-700"
-                                  : "bg-green-100 text-green-700"
-                              }`}
+                          <div
+                            key={index}
+                            className="rounded-xl bg-gray-900 border border-gray-700 shadow-lg p-5"
                           >
-                            {issue.priority}
-                          </span>
 
-                        </div>
+                            <h3 className="text-lg font-bold text-blue-600 mb-4">
+                              Issue {index + 1} of {result.issues.length}
+                            </h3>
 
-                        <div>
-                          <p className="text-sm font-semibold text-gray-500 mb-1">
-                            Confidence
-                          </p>
+                            <div className="mb-5">
+                              <p className="font-semibold text-gray-300">
+                                Reasoning
+                              </p>
 
-                          <span
-                            className={`px-3 py-1 rounded-full text-sm font-semibold
-                              ${
-                                issue.confidence === "High"
-                                  ? "bg-green-100 text-green-700"
-                                  : issue.confidence === "Medium"
-                                  ? "bg-yellow-100 text-yellow-700"
-                                  : "bg-red-100 text-red-700"
-                              }`}
-                          >
-                            {issue.confidence}
-                          </span>
+                              <p className="mt-2 text-white">
+                                {issue.reasoning}
+                              </p>
+                            </div>
 
-                        </div>
+                            <div className="grid grid-cols-2 gap-5">
 
-                        <div>
+                              <div>
+                                <p className="text-sm font-semibold text-gray-400">
+                                  Category
+                                </p>
 
-                          <p className="text-sm font-semibold text-gray-500 mb-1">
-                            Human Review
-                          </p>
+                                <p className="text-white font-medium">
+                                  {issue.category}
+                                </p>
+                              </div>
 
-                          <span
-                            className={`px-3 py-1 rounded-full text-sm font-semibold
-                              ${
-                                issue.human_review_required
-                                  ? "bg-orange-100 text-orange-700"
-                                  : "bg-green-100 text-green-700"
-                              }`}
-                          >
-                            {issue.human_review_required ? "Yes" : "No"}
-                          </span>
+                              <div>
+                                <p className="text-sm font-semibold text-gray-400">
+                                  Assigned Team
+                                </p>
 
-                        </div>
+                                <p className="text-white font-medium">
+                                  {issue.assigned_team}
+                                </p>
+                              </div>
+
+                              <div>
+                                <p className="text-sm font-semibold text-gray-400 mb-1">
+                                  Priority
+                                </p>
+
+                                <span
+                                  className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                                    issue.priority === "High"
+                                      ? "bg-red-100 text-red-700"
+                                      : issue.priority === "Medium"
+                                      ? "bg-yellow-100 text-yellow-700"
+                                      : "bg-green-100 text-green-700"
+                                  }`}
+                                >
+                                  {issue.priority}
+                                </span>
+                              </div>
+
+                              <div>
+                                <p className="text-sm font-semibold text-gray-400 mb-1">
+                                  Confidence
+                                </p>
+
+                                <span
+                                  className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                                    issue.confidence === "High"
+                                      ? "bg-green-100 text-green-700"
+                                      : issue.confidence === "Medium"
+                                      ? "bg-yellow-100 text-yellow-700"
+                                      : "bg-red-100 text-red-700"
+                                  }`}
+                                >
+                                  {issue.confidence}
+                                </span>
+                              </div>
+
+                              <div>
+                                <p className="text-sm font-semibold text-gray-400 mb-1">
+                                  Human Review
+                                </p>
+
+                                <span
+                                  className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                                    issue.human_review_required
+                                      ? "bg-orange-100 text-orange-700"
+                                      : "bg-green-100 text-green-700"
+                                  }`}
+                                >
+                                  {issue.human_review_required ? "Yes" : "No"}
+                                </span>
+                              </div>
+
+                            </div>
+
+                          </div>
+
+                        ))}
+
+                        <details className="rounded-xl border border-gray-700 bg-gray-900">
+
+                          <summary className="cursor-pointer px-5 py-4 text-blue-400 font-semibold hover:text-blue-300">
+                            More...
+                          </summary>
+
+                          <div className="grid grid-cols-3 gap-4 p-5 border-t border-gray-700">
+
+                            <div className="text-center">
+                              <p className="text-sm text-gray-400">
+                                Manual Routing
+                              </p>
+
+                              <p className="text-2xl font-bold text-red-400 mt-2">
+                                {result.estimated_manual_time}s
+                              </p>
+                            </div>
+
+                            <div className="text-center">
+                              <p className="text-sm text-gray-400">
+                                AI Routing
+                              </p>
+
+                              <p className="text-2xl font-bold text-green-400 mt-2">
+                                {result.ai_routing_time}s
+                              </p>
+                            </div>
+
+                            <div className="text-center">
+                              <p className="text-sm text-gray-400">
+                                Time Saved
+                              </p>
+
+                              <p className="text-2xl font-bold text-blue-400 mt-2">
+                                {result.time_saved_percentage}%
+                              </p>
+                            </div>
+
+                          </div>
+
+                        </details>
 
                       </div>
 
                     </div>
 
-                  ))}
+                  )}
 
                 </div>
 
-            </div>
-
-          </div>
+              </div>
 
         </div>
 
       </div>
-
     </main>
   );
 }
