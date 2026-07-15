@@ -11,11 +11,18 @@ interface TicketResponse {
   reasoning: string;
 }
 
+interface ClassificationResponse {
+  estimated_manual_time: number;
+  ai_routing_time: number;
+  time_saved_percentage: number;
+  issues: TicketResponse[];
+}
+
 export default function Home() {
   const [ticket, setTicket] = useState("");
-  const [results, setResults] = useState<TicketResponse[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<ClassificationResponse | null>(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const classifyTicket = async () => {
     if (!ticket.trim()) {
@@ -25,7 +32,7 @@ export default function Home() {
 
     setLoading(true);
     setError("");
-    setResults([]);
+    setResult(null);
 
     try {
       const response = await fetch("http://127.0.0.1:8000/route-ticket", {
@@ -44,7 +51,7 @@ export default function Home() {
       }
 
       const data = await response.json();
-      setResults(data);
+      setResult(data);
     } catch (err) {
       console.error(err);
       setError("Unable to connect to the backend.");
@@ -141,19 +148,53 @@ export default function Home() {
               Classification Results
             </h2>
 
+            {result && (
+              <div className="grid grid-cols-3 gap-4 mb-6">
+
+                <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 text-center shadow">
+                  <p className="text-sm text-gray-400">
+                    Manual Routing
+                  </p>
+
+                  <p className="text-2xl font-bold text-red-400 mt-2">
+                    {result.estimated_manual_time}s
+                  </p>
+                </div>
+
+                <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 text-center shadow">
+                  <p className="text-sm text-gray-400">
+                    AI Routing
+                  </p>
+
+                  <p className="text-2xl font-bold text-green-400 mt-2">
+                    {result.ai_routing_time}s
+                  </p>
+                </div>
+
+                <div className="bg-gray-900 border border-gray-700 rounded-xl p-4 text-center shadow">
+                  <p className="text-sm text-gray-400">
+                    Time Saved
+                  </p>
+
+                  <p className="text-2xl font-bold text-blue-400 mt-2">
+                    {result.time_saved_percentage}%
+                  </p>
+                </div>
+
+              </div>
+            ) }
+
             <div className="flex-1 overflow-y-auto pr-2">
 
-              {results.length === 0 ? (
-
+              {(!result || result.issues.length === 0) && (
                 <div className="h-full flex items-center justify-center text-gray-500 text-center">
                   Submit a support ticket to view AI classification results.
                 </div>
-
-              ) : (
+              )}
 
                 <div className="space-y-5">
 
-                  {results.map((result, index) => (
+                  {result?.issues.map((issue, index) => (
 
                     <div
                       key={index}
@@ -161,7 +202,7 @@ export default function Home() {
                     >
 
                       <h3 className="text-lg font-bold text-blue-600 mb-4">
-                        Issue {index + 1} of {results.length}
+                        Issue {index + 1} of {result?.issues.length}
                       </h3>
 
                       {/* Reasoning First */}
@@ -172,7 +213,7 @@ export default function Home() {
                         </p>
 
                         <p className="mt-2 text-white">
-                          {result.reasoning}
+                          {issue.reasoning}
                         </p>
                       </div>
 
@@ -184,7 +225,7 @@ export default function Home() {
                           </p>
 
                           <p className="text-white font-medium">
-                            {result.category}
+                            {issue.category}
                           </p>
                         </div>
 
@@ -193,8 +234,8 @@ export default function Home() {
                             Assigned Team
                           </p>
 
-                          <p className="text-gray-900 font-medium">
-                            {result.assigned_team}
+                          <p className="text-white font-medium">
+                            {issue.assigned_team}
                           </p>
                         </div>
 
@@ -206,14 +247,14 @@ export default function Home() {
                           <span
                             className={`px-3 py-1 rounded-full text-sm font-semibold
                               ${
-                                result.priority === "High"
+                                issue.priority === "High"
                                   ? "bg-red-100 text-red-700"
-                                  : result.priority === "Medium"
+                                  : issue.priority === "Medium"
                                   ? "bg-yellow-100 text-yellow-700"
                                   : "bg-green-100 text-green-700"
                               }`}
                           >
-                            {result.priority}
+                            {issue.priority}
                           </span>
 
                         </div>
@@ -226,14 +267,14 @@ export default function Home() {
                           <span
                             className={`px-3 py-1 rounded-full text-sm font-semibold
                               ${
-                                result.confidence === "High"
+                                issue.confidence === "High"
                                   ? "bg-green-100 text-green-700"
-                                  : result.confidence === "Medium"
+                                  : issue.confidence === "Medium"
                                   ? "bg-yellow-100 text-yellow-700"
                                   : "bg-red-100 text-red-700"
                               }`}
                           >
-                            {result.confidence}
+                            {issue.confidence}
                           </span>
 
                         </div>
@@ -247,12 +288,12 @@ export default function Home() {
                           <span
                             className={`px-3 py-1 rounded-full text-sm font-semibold
                               ${
-                                result.human_review_required
+                                issue.human_review_required
                                   ? "bg-orange-100 text-orange-700"
                                   : "bg-green-100 text-green-700"
                               }`}
                           >
-                            {result.human_review_required ? "Yes" : "No"}
+                            {issue.human_review_required ? "Yes" : "No"}
                           </span>
 
                         </div>
@@ -264,8 +305,6 @@ export default function Home() {
                   ))}
 
                 </div>
-
-              )}
 
             </div>
 
