@@ -155,3 +155,6 @@ making the application deployment-friendly.
 - Export reports
 - Dashboard analytics
 - File attachment support
+<img width="1512" height="851" alt="image" src="https://github.com/user-attachments/assets/bf2a7d7e-c2f2-4cd6-ba84-f299624f8627" />
+<img width="1512" height="858" alt="image" src="https://github.com/user-attachments/assets/f4dd4aeb-acf2-4768-8e2d-b6cb144138d5" />
+  
